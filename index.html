@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monster Rogue - A Roguelike Adventure</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #1a1a1a;
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        #gameContainer {
+            width: 100%;
+            max-width: 1000px;
+            background: linear-gradient(135deg, #2d2d2d 0%, #1a1a1a 100%);
+            border: 3px solid #00ff00;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.3);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #00ff00;
+            padding-bottom: 10px;
+        }
+
+        .header h1 {
+            color: #00ff00;
+            font-size: 2.5em;
+            text-shadow: 0 0 10px #00ff00;
+        }
+
+        .header p {
+            color: #888;
+            margin-top: 5px;
+        }
+
+        .gameInfo {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .infoBox {
+            background: #2a2a2a;
+            border: 2px solid #0088ff;
+            border-radius: 5px;
+            padding: 15px;
+        }
+
+        .infoBox h3 {
+            color: #0088ff;
+            margin-bottom: 8px;
+            font-size: 0.9em;
+        }
+
+        .infoBox p {
+            font-size: 1.2em;
+            color: #fff;
+        }
+
+        .battleArea {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin: 30px 0;
+            background: #1a1a1a;
+            padding: 20px;
+            border-radius: 5px;
+        }
+
+        .character {
+            text-align: center;
+            padding: 20px;
+            background: #2a2a2a;
+            border-radius: 5px;
+        }
+
+        .character h2 {
+            color: #00ff00;
+            margin-bottom: 10px;
+        }
+
+        .characterSprite {
+            font-size: 4em;
+            margin: 20px 0;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .healthBar {
+            width: 100%;
+            height: 25px;
+            background: #1a1a1a;
+            border: 2px solid #ff4444;
+            border-radius: 3px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+
+        .healthFill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff4444, #ffaa44);
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+
+        .stats {
+            text-align: left;
+            margin-top: 15px;
+            font-size: 0.9em;
+            color: #aaa;
+        }
+
+        .stats p {
+            margin: 5px 0;
+        }
+
+        .battleLog {
+            background: #0a0a0a;
+            border: 2px solid #888;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 20px 0;
+            height: 150px;
+            overflow-y: auto;
+            font-size: 0.9em;
+        }
+
+        .logEntry {
+            margin: 5px 0;
+            padding: 5px;
+            border-left: 3px solid #00ff00;
+            padding-left: 10px;
+        }
+
+        .logEntry.damage {
+            color: #ff4444;
+            border-left-color: #ff4444;
+        }
+
+        .logEntry.heal {
+            color: #44ff44;
+            border-left-color: #44ff44;
+        }
+
+        .logEntry.info {
+            color: #0088ff;
+            border-left-color: #0088ff;
+        }
+
+        .actions {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        .actionBtn {
+            padding: 15px;
+            background: linear-gradient(135deg, #0088ff, #0055aa);
+            border: 2px solid #00ff00;
+            color: #fff;
+            cursor: pointer;
+            border-radius: 5px;
+            font-size: 1em;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .actionBtn:hover:not(:disabled) {
+            background: linear-gradient(135deg, #00ff00, #00aa00);
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+            transform: scale(1.05);
+        }
+
+        .actionBtn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .gameOver {
+            background: #1a1a1a;
+            border: 3px solid #ff4444;
+            border-radius: 10px;
+            padding: 30px;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .gameOver h2 {
+            font-size: 2em;
+            color: #ff4444;
+            margin-bottom: 15px;
+        }
+
+        .gameOver p {
+            font-size: 1.2em;
+            margin: 10px 0;
+        }
+
+        .gameOver button {
+            margin-top: 20px;
+            padding: 15px 30px;
+            background: #00ff00;
+            border: none;
+            color: #000;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+        }
+
+        .gameOver button:hover {
+            background: #00aa00;
+            transform: scale(1.05);
+        }
+
+        .reward {
+            background: linear-gradient(135deg, #ffaa00, #ff6600);
+            border: 2px solid #ffaa00;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 15px 0;
+            text-align: center;
+        }
+
+        .reward h3 {
+            font-size: 1.5em;
+            margin-bottom: 10px;
+        }
+
+        .rewardBtn {
+            padding: 10px 20px;
+            background: #00ff00;
+            border: none;
+            color: #000;
+            cursor: pointer;
+            margin: 5px;
+            border-radius: 3px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .rewardBtn:hover {
+            background: #00aa00;
+            transform: scale(1.05);
+        }
+
+        .status {
+            display: inline-block;
+            background: #ff6600;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 0.8em;
+            margin: 2px;
+        }
+
+        @media (max-width: 768px) {
+            .battleArea {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .actions {
+                grid-template-columns: 1fr;
+            }
+
+            .header h1 {
+                font-size: 1.8em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <div class="header">
+            <h1>⚔️ Monster Rogue ⚔️</h1>
+            <p>A Turn-Based Roguelike Adventure</p>
+        </div>
+
+        <div class="gameInfo">
+            <div class="infoBox">
+                <h3>Floor</h3>
+                <p id="floorInfo">1</p>
+            </div>
+            <div class="infoBox">
+                <h3>Exp to Next Level</h3>
+                <p id="expInfo">0/100</p>
+            </div>
+            <div class="infoBox">
+                <h3>Gold</h3>
+                <p id="goldInfo">0</p>
+            </div>
+            <div class="infoBox">
+                <h3>High Score</h3>
+                <p id="highScoreInfo">0</p>
+            </div>
+        </div>
+
+        <div id="gameContent"></div>
+    </div>
+
+    <script>
+// ========== GAME CLASSES ==========
+
+class Player {
+    constructor() {
+        this.maxHP = 100;
+        this.hp = 100;
+        this.level = 1;
+        this.exp = 0;
+        this.expToLevel = 100;
+        this.attack = 10;
+        this.defense = 2;
+        this.gold = 0;
+        this.floor = 1;
+        this.abilities = ['Attack', 'Defend', 'Heal'];
+        this.statuses = [];
+        this.defeatedEnemies = 0;
+    }
+
+    gainExp(amount) {
+        this.exp += amount;
+        if (this.exp >= this.expToLevel) {
+            this.levelUp();
+        }
+    }
+
+    levelUp() {
+        this.level++;
+        this.exp = 0;
+        this.expToLevel = Math.floor(this.expToLevel * 1.2);
+        this.maxHP += 20;
+        this.hp = this.maxHP;
+        this.attack += 3;
+        this.defense += 1;
+        addLog(`Level Up! You are now level ${this.level}!`, 'heal');
+    }
+
+    takeDamage(amount) {
+        let reducedDamage = Math.max(1, amount - this.defense);
+        this.hp -= reducedDamage;
+        return reducedDamage;
+    }
+
+    heal(amount) {
+        let oldHP = this.hp;
+        this.hp = Math.min(this.maxHP, this.hp + amount);
+        return this.hp - oldHP;
+    }
+
+    addStatus(status) {
+        if (!this.statuses.includes(status)) {
+            this.statuses.push(status);
+        }
+    }
+
+    removeStatus(status) {
+        this.statuses = this.statuses.filter(s => s !== status);
+    }
+
+    isAlive() {
+        return this.hp > 0;
+    }
+}
+
+class Enemy {
+    constructor(floor) {
+        this.floor = floor;
+        this.level = Math.floor(floor / 3) + 1;
+        this.generateStats();
+        this.hp = this.maxHP;
+        this.statuses = [];
+        this.lastAction = null;
+    }
+
+    generateStats() {
+        const enemies = [
+            { name: 'Goblin', emoji: '👺', baseAttack: 4, baseHP: 15 },
+            { name: 'Orc', emoji: '🧌', baseAttack: 7, baseHP: 25 },
+            { name: 'Troll', emoji: '👹', baseAttack: 10, baseHP: 40 },
+            { name: 'Dragon', emoji: '🐉', baseAttack: 15, baseHP: 60 },
+            { name: 'Demon', emoji: '😈', baseAttack: 12, baseHP: 50 }
+        ];
+
+        const enemyType = enemies[Math.min(this.level - 1, enemies.length - 1)];
+        this.name = enemyType.name;
+        this.emoji = enemyType.emoji;
+        this.maxHP = Math.floor(enemyType.baseHP * (1 + this.level * 0.5));
+        this.attack = Math.floor(enemyType.baseAttack * (1 + this.level * 0.3));
+        this.defense = Math.floor(this.level * 0.5);
+        this.expReward = Math.floor(50 * this.level);
+        this.goldReward = Math.floor(30 * this.level);
+    }
+
+    takeDamage(amount) {
+        let reducedDamage = Math.max(1, amount - this.defense);
+        this.hp -= reducedDamage;
+        return reducedDamage;
+    }
+
+    getAction() {
+        const actions = ['attack', 'attack', 'attack', 'defend'];
+        this.lastAction = actions[Math.floor(Math.random() * actions.length)];
+        return this.lastAction;
+    }
+
+    isAlive() {
+        return this.hp > 0;
+    }
+}
+
+// ========== GAME STATE ==========
+
+let gameState = {
+    player: new Player(),
+    enemy: null,
+    battleLog: [],
+    gameOver: false,
+    defenseMode: false,
+    battleInProgress: true
+};
+
+// ========== UI FUNCTIONS ==========
+
+function addLog(message, type = 'info') {
+    gameState.battleLog.push({ message, type });
+    if (gameState.battleLog.length > 10) {
+        gameState.battleLog.shift();
+    }
+}
+
+function renderBattleLog() {
+    let logHTML = '';
+    gameState.battleLog.forEach(entry => {
+        logHTML += `<div class="logEntry ${entry.type}">${entry.message}</div>`;
+    });
+    return logHTML;
+}
+
+function updateUI() {
+    document.getElementById('floorInfo').textContent = gameState.player.floor;
+    document.getElementById('expInfo').textContent = `${gameState.player.exp}/${gameState.player.expToLevel}`;
+    document.getElementById('goldInfo').textContent = gameState.player.gold;
+    document.getElementById('highScoreInfo').textContent = gameState.player.defeatedEnemies;
+}
+
+function renderBattle() {
+    const player = gameState.player;
+    const enemy = gameState.enemy;
+
+    let playerStatuses = '';
+    player.statuses.forEach(status => {
+        playerStatuses += `<span class="status">${status}</span>`;
+    });
+
+    let enemyStatuses = '';
+    enemy.statuses.forEach(status => {
+        enemyStatuses += `<span class="status">${status}</span>`;
+    });
+
+    const battleHTML = `
+        <div class="battleArea">
+            <div class="character">
+                <h2>Your Hero</h2>
+                <div class="characterSprite">🧙‍♂️</div>
+                <h3>Level ${player.level}</h3>
+                <div class="healthBar">
+                    <div class="healthFill" style="width: ${(player.hp / player.maxHP) * 100}%">
+                        ${player.hp}/${player.maxHP}
+                    </div>
+                </div>
+                <div class="stats">
+                    <p>Attack: ${player.attack}</p>
+                    <p>Defense: ${player.defense}</p>
+                    <p>Gold: ${player.gold}</p>
+                </div>
+                ${playerStatuses}
+            </div>
+
+            <div class="character">
+                <h2>${enemy.name}</h2>
+                <div class="characterSprite">${enemy.emoji}</div>
+                <h3>Level ${enemy.level}</h3>
+                <div class="healthBar">
+                    <div class="healthFill" style="width: ${(enemy.hp / enemy.maxHP) * 100}%">
+                        ${enemy.hp}/${enemy.maxHP}
+                    </div>
+                </div>
+                <div class="stats">
+                    <p>Attack: ${enemy.attack}</p>
+                    <p>Defense: ${enemy.defense}</p>
+                </div>
+                ${enemyStatuses}
+            </div>
+        </div>
+
+        <div class="battleLog">
+            ${renderBattleLog()}
+        </div>
+
+        <div class="actions">
+            <button class="actionBtn" onclick="playerAttack()">⚔️ Attack</button>
+            <button class="actionBtn" onclick="playerDefend()">🛡️ Defend</button>
+            <button class="actionBtn" onclick="playerHeal()">💚 Heal</button>
+            <button class="actionBtn" onclick="playerRun()">🏃 Run Away</button>
+        </div>
+    `;
+
+    document.getElementById('gameContent').innerHTML = battleHTML;
+}
+
+function renderGameOver(won) {
+    const player = gameState.player;
+    const emoji = won ? '🎉' : '💀';
+    const title = won ? `Victory on Floor ${player.floor}!` : 'Game Over';
+    const text = won ? `You defeated ${player.defeatedEnemies} enemies!` : `You made it to Floor ${player.floor}`;
+
+    const gameOverHTML = `
+        <div class="gameOver">
+            <h2>${emoji} ${title} ${emoji}</h2>
+            <p>Final Stats:</p>
+            <p>Level: ${player.level}</p>
+            <p>Enemies Defeated: ${player.defeatedEnemies}</p>
+            <p>Gold Collected: ${player.gold}</p>
+            <p>${text}</p>
+            <button onclick="location.reload()">Play Again</button>
+        </div>
+    `;
+
+    document.getElementById('gameContent').innerHTML = gameOverHTML;
+}
+
+function renderReward() {
+    const enemy = gameState.enemy;
+    const rewardHTML = `
+        <div class="reward">
+            <h3>Victory! 🏆</h3>
+            <p>+${enemy.expReward} EXP</p>
+            <p>+${enemy.goldReward} Gold</p>
+            <button class="rewardBtn" onclick="nextBattle()">Continue</button>
+        </div>
+    `;
+
+    document.getElementById('gameContent').innerHTML = rewardHTML;
+}
+
+// ========== BATTLE ACTIONS ==========
+
+function playerAttack() {
+    if (!gameState.battleInProgress) return;
+
+    const player = gameState.player;
+    const enemy = gameState.enemy;
+
+    gameState.battleInProgress = false;
+
+    let damage = Math.floor(Math.random() * (player.attack * 0.5) + player.attack * 0.75);
+    let actualDamage = enemy.takeDamage(damage);
+
+    addLog(`You attacked for ${actualDamage} damage!`, 'damage');
+
+    if (!enemy.isAlive()) {
+        handleVictory();
+        return;
+    }
+
+    setTimeout(() => {
+        enemyTurn();
+    }, 500);
+}
+
+function playerDefend() {
+    if (!gameState.battleInProgress) return;
+
+    const player = gameState.player;
+
+    gameState.battleInProgress = false;
+    gameState.defenseMode = true;
+    player.defense += 3;
+
+    addLog('You take a defensive stance!', 'heal');
+
+    setTimeout(() => {
+        enemyTurn();
+    }, 500);
+}
+
+function playerHeal() {
+    if (!gameState.battleInProgress) return;
+
+    const player = gameState.player;
+
+    gameState.battleInProgress = false;
+
+    let healed = player.heal(30);
+    addLog(`You healed for ${healed} HP!`, 'heal');
+
+    setTimeout(() => {
+        enemyTurn();
+    }, 500);
+}
+
+function playerRun() {
+    if (!gameState.battleInProgress) return;
+
+    const runChance = 0.4;
+    if (Math.random() < runChance) {
+        addLog('You escaped!', 'info');
+        gameState.player.hp = gameState.player.maxHP;
+        nextBattle();
+    } else {
+        addLog('You failed to escape!', 'damage');
+        gameState.battleInProgress = false;
+        setTimeout(() => {
+            enemyTurn();
+        }, 500);
+    }
+}
+
+function enemyTurn() {
+    const player = gameState.player;
+    const enemy = gameState.enemy;
+    const action = enemy.getAction();
+
+    let damage = Math.floor(Math.random() * (enemy.attack * 0.5) + enemy.attack * 0.75);
+    let actualDamage = player.takeDamage(damage);
+
+    if (gameState.defenseMode) {
+        actualDamage = Math.floor(actualDamage * 0.5);
+        player.hp += actualDamage;
+        addLog(`${enemy.name} attacked for ${actualDamage} damage (reduced by defense)!`, 'damage');
+        gameState.defenseMode = false;
+        player.defense -= 3;
+    } else {
+        addLog(`${enemy.name} attacked for ${actualDamage} damage!`, 'damage');
+    }
+
+    if (!player.isAlive()) {
+        handleDefeat();
+        return;
+    }
+
+    gameState.battleInProgress = true;
+    renderBattle();
+}
+
+function handleVictory() {
+    const enemy = gameState.enemy;
+    const player = gameState.player;
+
+    player.gold += enemy.goldReward;
+    player.gainExp(enemy.expReward);
+    player.defeatedEnemies++;
+    player.floor++;
+
+    addLog(`${enemy.name} defeated!`, 'heal');
+
+    renderReward();
+}
+
+function handleDefeat() {
+    gameState.gameOver = true;
+    renderGameOver(false);
+}
+
+function nextBattle() {
+    const player = gameState.player;
+
+    player.hp = player.maxHP;
+    player.defense = 2;
+    gameState.defenseMode = false;
+    gameState.battleLog = [];
+    gameState.battleInProgress = true;
+
+    gameState.enemy = new Enemy(player.floor);
+
+    addLog(`A wild ${gameState.enemy.name} appears!`, 'info');
+    renderBattle();
+    updateUI();
+}
+
+// ========== GAME START ==========
+
+function startGame() {
+    gameState.player = new Player();
+    gameState.battleLog = [];
+    gameState.gameOver = false;
+    nextBattle();
+    updateUI();
+}
+
+// Start the game on load
+window.addEventListener('load', startGame);
+    </script>
+</body>
+</html>
